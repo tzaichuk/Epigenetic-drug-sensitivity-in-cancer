@@ -1,0 +1,124 @@
+<html>
+<head>
+    <title>Epigenetic Drug Sensitivity in Cancer</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+
+<select id="selDataset" onchange="optionChanged(this.value)"></select>
+
+<div class="container">
+    <div class="row">
+        <div class="col-*-*"></div>
+        <div class="col-*-*"></div>
+    </div>
+    <div class="row">
+        <div class="col-*-*"></div>
+        <div class="col-*-*"></div>
+        <div class="col-*-*"></div>
+    </div>
+    <div class="row">
+        ...
+    </div>
+</div>
+<div id="metatable" class="panel-body"></div>
+<div id="pie"></div><br>
+<div id="line"></div>
+
+<div id="bubble"></div>
+</body>
+
+<script>
+    getNames();
+
+    // Get new data whenever the dropdown selection changes
+    function getNames() {
+        Plotly.d3.json(`/tissue`, function (error, data) {
+            console.log("data", data);
+
+            var i;
+            for (i = 0; i < data.length; i++) {
+                console.log("data", data[i]);
+                var option = document.createElement('option');
+                option.text = data[i];
+                option.value = data[i];
+                document.getElementById('selDataset').appendChild(option);
+            }
+        });
+    }
+    // cell Descriptions
+    Plotly.d3.json("/cell", function (error, cell) {
+        if (error) return console.warn(error);
+        pie(cell);
+        line(cell);
+    })
+
+    var default_url = "/";
+    var metatable = document.getElementById("metatable");
+
+    function pie(cell) {
+        Plotly.d3.json("/samples/aero_digestive_tract", function (error, response) {
+            if (error) return console.warn(error);
+            console.log(response);
+            console.log(response.tissue_values);
+            var data = [{
+                values: response.tissue_values.slice(0,9),
+                labels: response.tissue_subtype.slice(0,9),
+                type: 'pie'
+            }];
+
+            var layout = {margin: {t: 30, b: 100}};
+            Plotly.plot("pie", data, layout);
+        })
+    }
+
+    function line(cell) {
+        Plotly.d3.json("/samples/aero_digestive_tract", function (error, response) {
+            if (error) return console.warn(error);
+            console.log(response);
+            console.log(response.tissue_values);
+            var data = [{
+                x: response.tissue_subtype,
+                y: response.tissue_values,
+                mode: 'markers'
+            }];
+
+
+            var layout = {margin: {t: 30, b: 100}};
+            Plotly.plot("line", data, layout);
+        })
+    }
+
+    function optionChanged(sample) {
+        console.log("sample", sample);
+        var sampURL = `/samples/${sample}`;
+
+        Plotly.d3.json(sampURL, function (error, data) {
+            if (error) return console.warn(error);
+            Plotly.d3.json("/cell", function (error, cell) {
+                if (error) return console.warn(error);
+                updatePlotly(cell, data);
+            })
+        });
+
+    }
+
+    function updatePlotly(cell, data) {
+        console.log("labels", data.tissue_subtype.slice(0, 10));
+        console.log("values", data.tissue_values.slice(0, 10));
+
+        var Pie = document.getElementById("pie");
+        Plotly.restyle(Pie, "labels", [data.tissue_subtype.slice(0, 10)]);
+        Plotly.restyle(Pie, "values", [data.tissue_values.slice(0, 10)]);
+
+        var Line = document.getElementById("line");
+        Plotly.restyle(Line, "x", [data.tissue_subtype]);
+        Plotly.restyle(Line, "y", [data.tissue_values]);
+    }
+
+
+</script>
+</html>
